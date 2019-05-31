@@ -1,5 +1,5 @@
 ---
-layout: guide
+layout: post
 title: "My first guide to be deleted"
 date: 2019-05-31
 ---
