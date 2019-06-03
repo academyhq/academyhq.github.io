@@ -1,3 +1,9 @@
 name: academyhq.io
-markdwon: kramdown
 theme: jekyll-theme-hacker
+markdwon: kramdown
+kramdown:
+  highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: true
+
