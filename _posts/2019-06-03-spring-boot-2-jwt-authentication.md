@@ -74,7 +74,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 The signature verification key has been externalised into a standard Spring Boot configuration file.
 Add the following `application.yaml` to the `src/main/resources` directory of your project.
 
-```application.yaml
+```yaml
 security.jwt.signing.key: R2XDCP83yB23awZkfzK/nErOV/0=
 ```
 
@@ -82,7 +82,7 @@ security.jwt.signing.key: R2XDCP83yB23awZkfzK/nErOV/0=
 You can use https://jwt.io/ to quickly generate a JWT token for testing.
 Ensure to pick `HS*` (e.g. `HS256`) algorithm from the dropdown and use the same key value as `security.jwt.signing.key` defined in `application.yaml`.
 
-```bash
+```sh
 curl -H "Authorization: Bearer [TOKEN GOES HERE]" http://localhost:8080/[ENDPOINT]
 ```
 
