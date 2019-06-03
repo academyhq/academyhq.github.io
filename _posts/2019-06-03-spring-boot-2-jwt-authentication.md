@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Securing Spring Boot services using JWT"
-date: 2019-06-02
+date: 2019-06-03
 ---
 
 ### What do we want to do?
@@ -11,7 +11,7 @@ Let's say we are building a microservice using Spring Boot and we want to protec
 We will need to add `spring-security-oauth2` and `spring-security-jwt` dependencies to our Spring Boot project.
 Using these libraries we can configure our micrservice as a "Resource Server" capable of authenticating and authorising access to its HTTP endpoints by validating incoming JWT bearer tokens.
 
-```build.gradle
+```groovy
 plugins {
   id 'java'
   id 'idea'
@@ -31,12 +31,12 @@ dependencies {
 }
 ```
 
-#### Resource Service
+### Resource Service
 We configuration the microservice as a Resource Server by annotating it with the `@EnableResourceServer` and defining a token service.
 In the following example, symmetric key algorithm is assumed to have been used to generate a JWT token (e.g. `HS256` or any of its variants).
 That is, the same key is used for both creating and verifying the token, as opposed to asymmtric key whereby a key for creating a token is different to the one used to verify it.
 
-```ResourceServiceConfig.java
+```java
 @Configuration
 @EnableResourceServer
 public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
