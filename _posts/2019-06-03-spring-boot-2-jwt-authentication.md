@@ -11,7 +11,7 @@ How the client can obtain a JWT token is a subject for another post and as such,
 ### Create a new project
 Create a new Spring Boot project using Gradle.
 
-```bash
+```nolinenum
 > mkdir spring-boot-jwt-auth && cd spring-boot-jwt-auth
 > gradle init --project-name spring-boot-jwt-auth --type java-application --test-framework junit --package spring.boot.jwt.auth --dsl groovy
 ```
@@ -233,7 +233,7 @@ public class HelloWorldControllerIT {
 
 Run the test on the command line:
 
-```bash
+```nolinenum
 > ./gradew test
 ```
 
@@ -241,13 +241,13 @@ Run the test on the command line:
 
 Start your Spring Boot application via this gradle command:
 
-```bash
+```nolinenum
 > ./gradlew bootRun
 ```
 
-Once the application starts, we can test the `/` endpoint using a `curl` command, e.g.
+Once the application starts, we can test the `/` endpoint using the `curl` command, e.g.
 
-```bash
+```nolinenum
 > curl -H "Authorization: Bearer JWT_GOES_HERE" http://localhost:8080/ --verbose
 ```
 
