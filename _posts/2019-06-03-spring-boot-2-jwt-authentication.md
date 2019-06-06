@@ -2,14 +2,21 @@
 layout: post
 title: "Securing Spring Boot services using JWT"
 date: 2019-06-03
+tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
 
-### What do we want to do?
-Let's say we are building a microservice using Spring Boot and we want to protect our HTTP service endpoints using a JWT token (how the client can obtain a JWT token is a subject for another post).
+This guide demonstrates how to secure HTTP/S service endpoints using JWT tokens within a Spring Boot microservice.
+How the client can obtain a JWT token is a subject for another post and as such, will not be covered here.
 
-### How can we do this?
-We will need to add `spring-security-oauth2` and `spring-security-jwt` dependencies to our Spring Boot project.
-Using these libraries we can configure our micrservice as a "Resource Server" capable of authenticating and authorising access to its HTTP endpoints by validating incoming JWT bearer tokens.
+### Create a new project
+Create a new Spring Boot project using Gradle.
+
+```bash
+> mkdir spring-boot-jwt-auth && cd spring-boot-jwt-auth
+> gradle init --project-name spring-boot-jwt-auth --type java-application --test-framework junit --package spring.boot.jwt.auth --dsl groovy
+```
+
+Replace the contents of the `build.gradle` file with the following:
 
 ```groovy
 plugins {
@@ -20,7 +27,7 @@ plugins {
 }
 
 repositories {
-  mavenCentral()
+  jcenter()
 }
 
 dependencies {
@@ -31,12 +38,30 @@ dependencies {
 }
 ```
 
-### Resource Service
-We configuration the microservice as a Resource Server by annotating it with the `@EnableResourceServer` and defining a token service.
+The key dependencies to note are `spring-security-oauth2` and `spring-security-jwt`.
+Using these libraries we can configure the microservice as a "Resource Server" capable of authenticating and authorising access to its HTTP/S endpoints by validating incoming JWT bearer tokens.
+
+### Configure Spring Boot application as a Resource Server
+Configure the microservice as a Resource Server by annotating it with the `@EnableResourceServer` and defining a token service.
 In the following example, symmetric key algorithm is assumed to have been used to generate a JWT token (e.g. `HS256` or any of its variants).
 That is, the same key is used for both creating and verifying the token, as opposed to asymmtric key whereby a key for creating a token is different to the one used to verify it.
 
 ```java
+package spring.boot.jwt.auth;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
+import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
+import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
+import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
+import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
+
 @Configuration
 @EnableResourceServer
 public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
@@ -71,18 +96,162 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 }
 ```
 
-The signature verification key has been externalised into a standard Spring Boot configuration file.
+The signature verification key has been externalised into a standard Spring Boot configuration file and referenced in the code via the `@Value` annotation.
 Add the following `application.yaml` to the `src/main/resources` directory of your project.
 
 ```nolinenum
 security.jwt.signing.key: R2XDCP83yB23awZkfzK/nErOV/0=
 ```
 
-### Let's test our service
+*Note:*
+Given the above configuration, all endpoints exposed by this microservice will require authentication by default.
+We can change this behavior by configuring web based security for individual HTTP/S endpoints.
+For example, if we used `spring-boot-starter-actuator` library, which exposes a `health` endpoint that we wanted to make public, we could override the default web security configuration, as follows: 
+
+```java
+@Override
+public void configure(HttpSecurity http) throws Exception {
+    http.authorizeRequests()
+        .requestMatchers(EndpointRequest.to("health")).permitAll()
+        .anyRequest().authenticated();
+}
+```
+
+This change makes the `health` endpoint public, while all other endpoints continue to require JWT authentication.
+
+### Add a REST Controller
+Let's expose a simple endpoint to validate that the above configuration is correct and the authentication rules are enforced.
+The following REST controller defines a single HTTP GET endpoint accessible via the `/` path.
+Any attempt to call this endpoint without or invalid HTTP `Authorization` header attribute should result in HTTP `401 Unauthorized` reply.
+A call with a valid HTTP `Authorization` header attribute (i.e. containing a valid JWT bearer token), should result in HTTP `200 OK` reply. The body of the reply should contain "Hello World!" text.
+
+```java
+package spring.boot.jwt.auth;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class HelloWorldController {
+
+    @GetMapping
+    public String index() {
+        return "Hello World!";
+    }
+}
+```
+
+### Testing
+To validate that the authentication rules are enforced correctly by the Spring container, let's write an intergration test.
+Using `@SpringBootTest` annotation allows us to start a real servlet container and launch the Spring Boot application. This ensures that all servlet filter chains are available to our test.
+Invoking the controller under this configuration involves sending a real HTTP request to our endpoint.
+
+```java
+package simple.boot.service;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.jwt.JwtHelper;
+import org.springframework.security.jwt.crypto.sign.MacSigner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(webEnvironment = RANDOM_PORT)
+public class HelloWorldControllerIT {
+
+    @Value("${security.jwt.signing.key}")
+    private String signingKey;
+
+    @Autowired
+    private TestRestTemplate client;
+
+    @Test
+    public void testThatGetEndpointRequiresAuthentication() {
+        // send HTTP request to the server without Authorization header attribute
+        var resp = client.getForEntity("/", Void.class);
+        assertThat(resp.getStatusCode(), equalTo(HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    public void testThatGetWithInvaidJwtAccessTokenFailsAuthentication() {
+        // create and sign an empty JWT token using the wrong signing key,
+        // i.e. not the same as the one that will be used by the server to verify the signature
+        var jwt = JwtHelper.encode("{}", new MacSigner("wrong key"));
+
+        // prepare HTTP Authorization header attribute with JWT bearer token
+        var headers = new HttpHeaders();
+        headers.set("Authorization", format("Bearer %s", jwt.getEncoded()));
+
+        // send request to the server
+        var resp = client.exchange("/",
+            HttpMethod.GET,
+            new HttpEntity<>(null, headers),
+            new ParameterizedTypeReference<Void>() {}
+        );
+
+        // verify response
+        assertThat(resp.getStatusCode(), equalTo(HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    public void testThatGetWithValidJwtAccessTokenWorks() {
+        // create and sign an empty JWT token
+        var jwt = JwtHelper.encode("{}", new MacSigner(signingKey));
+
+        // prepare HTTP `Authorization` header attribute with JWT bearer token
+        var headers = new HttpHeaders();
+        headers.set("Authorization", format("Bearer %s", jwt.getEncoded()));
+
+        // send request to the server
+        var resp = client.exchange("/",
+            HttpMethod.GET,
+            new HttpEntity<>(null, headers),
+            new ParameterizedTypeReference<String>() {}
+        );
+
+        // verify response
+        assertThat(resp.getStatusCode(), equalTo(HttpStatus.OK));
+        assertThat(resp.getBody(), is("Hello World!"));
+    }
+}
+```
+
+Run the test on the command line:
+
+```bash
+> ./gradew test
+```
+
+### Running the application
+
+Start your Spring Boot application via this gradle command:
+
+```bash
+> ./gradlew bootRun
+```
+
+Once the application starts, we can test the `/` endpoint using a `curl` command, e.g.
+
+```bash
+> curl -H "Authorization: Bearer JWT_GOES_HERE" http://localhost:8080/ --verbose
+```
+
 You can use https://jwt.io/ to quickly generate a JWT token for testing.
 Ensure to pick `HS*` (e.g. `HS256`) algorithm from the dropdown and use the same key value as `security.jwt.signing.key` defined in `application.yaml`.
 
-```nolinenum
-curl -H "Authorization: Bearer [TOKEN GOES HERE]" http://localhost:8080/[ENDPOINT]
-```
 
