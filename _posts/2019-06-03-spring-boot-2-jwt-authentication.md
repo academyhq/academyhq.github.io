@@ -11,7 +11,7 @@ How the client can obtain a JWT token is a subject for another post and as such,
 ### Create a new project
 Create a new Spring Boot project using Gradle.
 
-```nolinenum
+```bash
 > mkdir spring-boot-jwt-auth && cd spring-boot-jwt-auth
 > gradle init --project-name spring-boot-jwt-auth --type java-application --test-framework junit --package spring.boot.jwt.auth --dsl groovy
 ```
@@ -33,8 +33,16 @@ repositories {
 dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-web'
   implementation 'org.springframework.boot:spring-boot-starter-security'
-  implementation 'org.springframework.security.oauth:spring-security-oauth2:2.3.5.RELEASE'
   implementation 'org.springframework.security:spring-security-jwt:1.0.10.RELEASE'
+  implementation 'org.springframework.security.oauth:spring-security-oauth2:2.3.5.RELEASE'
+
+  testImplementation('org.springframework.boot:spring-boot-starter-test') {
+      exclude group: 'junit', module: 'junit'
+  }
+  testImplementation 'org.springframework.security:spring-security-test'
+  testImplementation 'org.hamcrest:hamcrest:2.1'
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
+  testImplementation 'org.junit.platform:junit-platform-launcher:1.4.1'
 }
 ```
 
@@ -99,7 +107,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 The signature verification key has been externalised into a standard Spring Boot configuration file and referenced in the code via the `@Value` annotation.
 Add the following `application.yaml` to the `src/main/resources` directory of your project.
 
-```nolinenum
+```bash
 security.jwt.signing.key: R2XDCP83yB23awZkfzK/nErOV/0=
 ```
 
@@ -122,7 +130,7 @@ This change makes the `health` endpoint public, while all other endpoints contin
 ### Add a REST Controller
 Let's expose a simple endpoint to validate that the above configuration is correct and the authentication rules are enforced.
 The following REST controller defines a single HTTP GET endpoint accessible via the `/` path.
-Any attempt to call this endpoint without or invalid HTTP `Authorization` header attribute should result in HTTP `401 Unauthorized` reply.
+Any attempt to call this endpoint without or with invalid HTTP `Authorization` header attribute should result in HTTP `401 Unauthorized` reply.
 A call with a valid HTTP `Authorization` header attribute (i.e. containing a valid JWT bearer token), should result in HTTP `200 OK` reply. The body of the reply should contain "Hello World!" text.
 
 ```java
@@ -233,7 +241,7 @@ public class HelloWorldControllerIT {
 
 Run the test on the command line:
 
-```nolinenum
+```bash
 > ./gradew test
 ```
 
@@ -241,13 +249,13 @@ Run the test on the command line:
 
 Start your Spring Boot application via this gradle command:
 
-```nolinenum
+```bash
 > ./gradlew bootRun
 ```
 
 Once the application starts, we can test the `/` endpoint using the `curl` command, e.g.
 
-```nolinenum
+```bash
 > curl -H "Authorization: Bearer JWT_GOES_HERE" http://localhost:8080/ --verbose
 ```
 
