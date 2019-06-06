@@ -44,6 +44,13 @@ dependencies {
   testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
   testImplementation 'org.junit.platform:junit-platform-launcher:1.4.1'
 }
+
+sourceCompatibility = 11.0
+targetCompatibility = 11.0
+
+test {
+  useJUnitPlatform()
+}
 ```
 
 The key dependencies to note are `spring-security-oauth2` and `spring-security-jwt`.
@@ -262,4 +269,5 @@ Once the application starts, we can test the `/` endpoint using the `curl` comma
 You can use https://jwt.io/ to quickly generate a JWT token for testing.
 Ensure to pick `HS*` (e.g. `HS256`) algorithm from the dropdown and use the same key value as `security.jwt.signing.key` defined in `application.yaml`.
 
-
+### Conclusion
+This guide demonstrated how to protect HTTP service endpoints within a Spring Boot web application using JWT authentication tokens.
