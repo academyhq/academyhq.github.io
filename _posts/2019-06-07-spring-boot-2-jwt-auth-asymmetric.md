@@ -137,13 +137,28 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 }
 ```
 
+*Note:*
+Given the above configuration, all endpoints exposed by this microservice will require authentication by default.
+We can change this behavior by configuring web based security for individual HTTP/S endpoints.
+For example, if we used `spring-boot-starter-actuator` library, which exposes a `health` endpoint that we wanted to make public, we could override the default web security configuration, as follows: 
+
+```java
+@Override
+public void configure(HttpSecurity http) throws Exception {
+    http.authorizeRequests()
+        .requestMatchers(EndpointRequest.to("health")).permitAll()
+        .anyRequest().authenticated();
+}
+```
+
+This change makes the `health` endpoint public, while all other endpoints continue to require JWT authentication.
+
 The signature verifier key has been externalised into a standard Spring Boot configuration file and referenced in the code via the `@Value` annotation.
 You can use OpenSSL to generate the signing and verifier keys. For example, to generate a 2048 bit RSA key pair do the following:
 
 ```bash
 > openssl genpkey -algorithm RSA -out signing-key.pem -pkeyopt rsa_keygen_bits:2048
 > openssl rsa -pubout -in private_key.pem -out verifier-key.pem
->
 ```
 
 Add the contents of the `signing-key.pem` and `verifier-key.pem` files into `application.yaml` in the `src/main/resources/` directory of your project, e.g.
@@ -193,22 +208,6 @@ security.jwt:
 
 *IMPORTANT:* We are storing both the signing and verifier keys in a configuration file for demonstration purposes only.
 While it is OK to store the verifier key in the configuration file, as it is public, you should *NEVER* store a private signing key like this!
-
-*Note:*
-Given the above configuration, all endpoints exposed by this microservice will require authentication by default.
-We can change this behavior by configuring web based security for individual HTTP/S endpoints.
-For example, if we used `spring-boot-starter-actuator` library, which exposes a `health` endpoint that we wanted to make public, we could override the default web security configuration, as follows: 
-
-```java
-@Override
-public void configure(HttpSecurity http) throws Exception {
-    http.authorizeRequests()
-        .requestMatchers(EndpointRequest.to("health")).permitAll()
-        .anyRequest().authenticated();
-}
-```
-
-This change makes the `health` endpoint public, while all other endpoints continue to require JWT authentication.
 
 ### Add a REST Controller
 Let's expose a simple endpoint to validate that the above configuration is correct and the authentication rules are enforced.
