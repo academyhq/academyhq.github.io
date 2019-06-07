@@ -1,20 +1,25 @@
 ---
 layout: post
-title: "Securing Spring Boot services using JWT"
-date: 2019-06-03
+title: Spring Boot + Spring Security + JWT | Authentication using asymmetric key cryptography
+date: 2019-06-10
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
 
 This guide demonstrates how to secure HTTP/S service endpoints using JWT tokens within a Spring Boot microservice.
+This guide represents a continuation of [Spring Boot + Spring Security + JWT | Authentication using symmetric key cryptography](/2019-06-03-spring-boot-jwt-auth-symmetric.md).
+The key difference between between each guide is not so much in the code but rather the type of cryptographic primitives used in each solution.
+While the previous guide demonstrted the use of symmetric key cryptography for signing and verifying JWT digital signatures, this guide focuses on public key cryprography and how it can be used
+for signing and verifying JWTs.
+You do not need to read the previous guide to follow this one. It is self contained.
 How the client can obtain a JWT token is a subject for another post and as such, will not be covered here.
-The code for this guide is available in [GitHub][spring-boot-jwt-auth.git].
+The code for this guide is available in [GitHub][spring-boot-jwt-auth-asymmetric.git].
 
 ### Create a new project
 Create a new Spring Boot project using Gradle.
 
 ```bash
-> mkdir spring-boot-jwt-auth && cd spring-boot-jwt-auth
-> gradle init --project-name spring-boot-jwt-auth --type java-application --test-framework junit --package spring.boot.jwt.auth --dsl groovy
+> mkdir spring-boot-jwt-auth-asymmetric && cd spring-boot-jwt-auth-asymmetric
+> gradle init --project-name spring-boot-jwt-auth-asymmetric --type java-application --test-framework junit --package spring.boot.jwt.auth --dsl groovy
 ```
 
 Replace the contents of the `build.gradle` file with the following:
@@ -81,8 +86,7 @@ While we are at it, also remove the `src/test/java/spring/boo/jwt/auth/AppTest.j
 
 ### Configure Spring Boot application as a Resource Server
 Configure the microservice as a Resource Server by annotating it with the `@EnableResourceServer` and defining a token service.
-In the following example, symmetric key algorithm is assumed to have been used to generate a JWT token (e.g. `HS256` or any of its variants).
-That is, the same key is used for both creating and verifying the token, as opposed to asymmtric key whereby a key for creating a token is different to the one used to verify it.
+In the following example, asymmetric key algorithm is assumed to have been used to generate a JWT token (e.g. `RS256` or any of its variants).
 
 ```java
 package spring.boot.jwt.auth;
@@ -103,13 +107,13 @@ import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 @EnableResourceServer
 public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 
-    @Value("${security.jwt.signing.key}")
-    private String signingKey;
+    @Value("${security.jwt.verifier.key}")
+    private String verifierKey;
 
     @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
         var converter = new JwtAccessTokenConverter();
-        converter.setSigningKey(signingKey);
+        converter.setVerifierKey(verifierKey);
         return converter;
     }
 
@@ -133,13 +137,62 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 }
 ```
 
-The signature verification key has been externalised into a standard Spring Boot configuration file and referenced in the code via the `@Value` annotation.
-Add the following `application.yaml` to the `src/main/resources` directory of your project.
+The signature verifier key has been externalised into a standard Spring Boot configuration file and referenced in the code via the `@Value` annotation.
+You can use OpenSSL to generate the signing and verifier keys. For example, to generate a 2048 bit RSA key pair do the following:
 
 ```bash
-security.jwt.signing.key: R2XDCP83yB23awZkfzK/nErOV/0=
+> openssl genpkey -algorithm RSA -out signing-key.pem -pkeyopt rsa_keygen_bits:2048
+> openssl rsa -pubout -in private_key.pem -out verifier-key.pem
+>
 ```
-*IMPORTANT:* We are storing the signature key in a configuration file for demonstration purposes only! You should never store un-encrypted values like this and check them into Git.
+
+Add the contents of the `signing-key.pem` and `verifier-key.pem` files into `application.yaml` in the `src/main/resources/` directory of your project, e.g.
+
+```bash
+security.jwt:
+  verifier.key: |
+    -----BEGIN PUBLIC KEY-----
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx6fAVYYd7lngthjkvn9z
+    13+ZNEfcGkxbQ76jJt44KvTixXBtOg99cgQqWtaUhGth45bPuRUzL5rXN9+bBIcF
+    bvvL5YgnQaSNDHz/KJ1q1IA1lK9Az6CwGKSzgUkLBYgjkDFTaTHA09eVHl8axh7q
+    CJVNDcDqdF0Xo9Cd5j2HB0X/3UmPxPT/hmm1ZfuAO/i56FCpxqjG99Gtqqv4gHpj
+    aDDSByX4vUP+Oy0/XaedyTBcsQRU3EixEOZYiuSiKr3rg67lVoYBkiCSz36KtkqP
+    OnCMp1PpkQ7ajsHaNFCxlL5a9jVE0n59vWrVYkOWniuLpzBt13VMO3lEJLsZa+EO
+    IwIDAQAB
+    -----END PUBLIC KEY-----
+  signing.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHp8BVhh3uWeC2
+    GOS+f3PXf5k0R9waTFtDvqMm3jgq9OLFcG06D31yBCpa1pSEa2Hjls+5FTMvmtc3
+    35sEhwVu+8vliCdBpI0MfP8onWrUgDWUr0DPoLAYpLOBSQsFiCOQMVNpMcDT15Ue
+    XxrGHuoIlU0NwOp0XRej0J3mPYcHRf/dSY/E9P+GabVl+4A7+LnoUKnGqMb30a2q
+    q/iAemNoMNIHJfi9Q/47LT9dp53JMFyxBFTcSLEQ5liK5KIqveuDruVWhgGSIJLP
+    foq2So86cIynU+mRDtqOwdo0ULGUvlr2NUTSfn29atViQ5aeK4unMG3XdUw7eUQk
+    uxlr4Q4jAgMBAAECggEAFMO9nSd1tXRjiozMPYPD6IW8yVMv8Qw/8avCDCjQbqdJ
+    bn9i3Mb/pPwJ66iliaAhbiohMH6j9C+Gcqku1im0xvYpHpYqfwk+Ii5d2zuEANXU
+    vMH9W5q6tdVrVebi3pBqInT+19H03BNvztjVUAWnEX11phiKSc/kxYTM50U+5eKS
+    xwEOfAhZcOfyRsb2zQAx6GIUXsCIDdaK9qerqMRwxuz33jGrdFeD5cf3J0JTuDz0
+    fxQbtNv/9t1X3EEF+xRYGD6jZqDjrbNbCKvD1qpDpu4BgP400eRtxDgcH69Hh5lX
+    5J7FVQyxdEPBdQtmpDAbhd1BU7p+GowWzi1TY3JVAQKBgQDschUEHjuGb/wi4mBE
+    tUaA8rLuYDvHDPnbbBHx2GSOShBBVK+DFkQXuFJhF4VQuutlNHQZ0jCXCa86lTOX
+    RuAchkF4HYIBn3LoURbhguSqcfmVLosXABeJEdyFZ58nXzl9L/2TGI7KrUjRrnfF
+    sc4Gr/7urWuTLZY4Wxgav5LaPQKBgQDYKsLDDAbJ3eM8oLSQHBE2O8a3w2MhB72m
+    ezKT3Fz8Wk5IKkrUX/ouubIemoKjy4oyhw6fqQ20XKZWsD/7aXzwK3Jl0EqGAqO5
+    EMdXYb3YHlYzAJuIpabOKIstch/XeMqYJFCPVE0zoMNzv1T+Ali5BeMaxTy73qF+
+    LnB1B27v3wKBgE+WpxRXyNmb4FcttBHsourMxwYORpDeAUymt/OcT1zF+WrEQr/x
+    QsJpPPGJpUpjYNEUMvBuHAT7MYyapF8LcGyplGgGJri9H0Sr5vPJx4bIDqb0n8UC
+    NungpUYSdzQdjZBiEwzse0QlyBksjQxyqVL+8uUMYuWLtsEJiLeYPKpRAoGBAMLh
+    6iyGDyi3DkJ+b8rsQuguA/1v/VKt8+C/eN2s8Xfgwmp1FnlY/ehaKadFjTm2KqVa
+    9WgjtONCFARbaZNzitvLj5sSqd0fTBNweQbia5EH6JaamZ4cGcIK807JcMOFdsCr
+    HKXbTq6Y5RzZBfrqiqpkEFb2Msb884Mawu/+/5jpAoGAUtM7zey814e4C2+lWgGQ
+    WqsqPyeR6bZqaUiXWZX8cnj6ZEb974ssssfbB7UjZWYYxYq56v+uDIN1/8Vgndj1
+    5d7LIBz5q+Zh1//mxzEDn8HLunTv4q+wKzbYmBB7BGbVdzKHCSPHPH56YQ+gany6
+    uT0bSYPDHO4m2m4N8XsHojA=
+    -----END PRIVATE KEY-----
+```
+
+*IMPORTANT:* We are storing both the signing and verifier keys in a configuration file for demonstration purposes only.
+While it is OK to store the verifier key in the configuration file, as it is public, you should *NEVER* store a private signing key like this!
 
 *Note:*
 Given the above configuration, all endpoints exposed by this microservice will require authentication by default.
@@ -187,6 +240,7 @@ Invoking the controller under this configuration involves sending a real HTTP re
 ```java
 package spring.boot.jwt.auth;
 
+import org.bouncycastle.util.io.pem.PemReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -199,8 +253,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.jwt.JwtHelper;
-import org.springframework.security.jwt.crypto.sign.MacSigner;
+import org.springframework.security.jwt.crypto.sign.RsaSigner;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -226,10 +289,10 @@ public class HelloWorldControllerIT {
     }
 
     @Test
-    public void testThatGetWithInvaidJwtAccessTokenFailsAuthentication() {
-        // create and sign an empty JWT token using the wrong signing key,
-        // i.e. not the same as the one that will be used by the server to verify the signature
-        var jwt = JwtHelper.encode("{}", new MacSigner("wrong key"));
+    public void testThatGetWithInvaidJwtAccessTokenFailsAuthentication() throws NoSuchAlgorithmException {
+        // create and sign an empty JWT token using the wrong signing key
+        var privateKey = (RSAPrivateKey) KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
+        var jwt = JwtHelper.encode("{}", new RsaSigner(privateKey));
 
         // prepare HTTP Authorization header attribute with JWT bearer token
         var headers = new HttpHeaders();
@@ -247,9 +310,9 @@ public class HelloWorldControllerIT {
     }
 
     @Test
-    public void testThatGetWithValidJwtAccessTokenWorks() {
+    public void testThatGetWithValidJwtAccessTokenWorks() throws Exception {
         // create and sign an empty JWT token
-        var jwt = JwtHelper.encode("{}", new MacSigner(signingKey));
+        var jwt = JwtHelper.encode("{}", new RsaSigner(parsePemEncodedSigningKey()));
 
         // prepare HTTP `Authorization` header attribute with JWT bearer token
         var headers = new HttpHeaders();
@@ -265,6 +328,14 @@ public class HelloWorldControllerIT {
         // verify response
         assertThat(resp.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(resp.getBody(), is("Hello World!"));
+    }
+
+    private RSAPrivateKey parsePemEncodedSigningKey() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+        var reader = new PemReader(new StringReader(signingKey));
+        var factory = KeyFactory.getInstance("RSA");
+        return (RSAPrivateKey) factory.generatePrivate(
+                new PKCS8EncodedKeySpec(reader.readPemObject().getContent())
+        );
     }
 }
 ```
@@ -290,11 +361,11 @@ Once the application starts, we can test the `/` endpoint using the `curl` comma
 ```
 
 You can use https://jwt.io/ to quickly generate a JWT token for testing.
-Ensure to pick `HS*` (e.g. `HS256`) algorithm from the dropdown and use the same key value as `security.jwt.signing.key` defined in `application.yaml`.
+Ensure to pick `RS*` (e.g. `RS256`) algorithm from the dropdown and use the same key value as `security.jwt.signing.key` defined in `application.yaml`.
 
 ### Conclusion
 This guide demonstrated how to protect HTTP service endpoints within a Spring Boot web application using JWT authentication tokens.
-The complete, working solution is available in [GitHub][spring-boot-jwt-auth.git].
+The complete, working solution is available in [GitHub][spring-boot-jwt-auth-asymmetric.git].
 
-[spring-boot-jwt-auth.git]: https://github.com/academyhq/spring-boot-jwt-auth
+[spring-boot-jwt-auth-asymmetric.git]: https://github.com/academyhq/spring-boot-jwt-auth-asymmetric
 
