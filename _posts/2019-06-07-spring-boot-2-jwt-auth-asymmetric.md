@@ -6,7 +6,7 @@ tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
 
 This guide demonstrates how to secure HTTP/S service endpoints using JWT tokens within a Spring Boot microservice.
-This guide represents a continuation of [Spring Boot + Spring Security + JWT | Authentication using symmetric key cryptography](/2019/06/03/spring-boot-jwt-auth-symmetric).
+This guide represents a continuation of [Spring Boot + Spring Security + JWT | Authentication using symmetric key cryptography](/2019/06/03/spring-boot-2-jwt-auth-symmetric).
 The key difference between between each guide is not so much in the code but rather the type of cryptographic primitives used in each solution.
 While the previous guide demonstrted the use of symmetric key cryptography for signing and verifying JWT digital signatures, this guide focuses on public key cryprography and how it can be used
 for signing and verifying JWTs.
