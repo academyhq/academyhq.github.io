@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Securing Spring Boot services using JWT"
+title: Spring Boot + Spring Security + JWT | Authentication using symmetric key cryptography
 date: 2019-06-03
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
