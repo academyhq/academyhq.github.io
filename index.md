@@ -6,7 +6,7 @@
       <a href="{{ post.url }}">
         {{ post.title }}
       </a>
-      <p>{{ page.date }}</p>
+      <p>{{ post.date }}</p>
     </blockquote>
   {% endfor %}
 </div>
