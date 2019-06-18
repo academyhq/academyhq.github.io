@@ -1,5 +1,5 @@
 name: academyhq.io
-theme: jekyll-theme-hacker
+theme: jekyll-theme-cayman
 markdwon: kramdown
 kramdown:
   highlighter: rouge
