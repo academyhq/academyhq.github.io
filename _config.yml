@@ -2,7 +2,7 @@ name: academyhq.io
 theme: jekyll-theme-cayman
 markdwon: kramdown
 title: AcademyHQ
-description: Quick quides and tutorials for developers
+description: Quick courses, guides and tutorials for developers
 kramdown:
   highlighter: rouge
   syntax_highlighter_opts:
