@@ -1,6 +1,5 @@
-### Latest Guides
-
 <div class="posts">
+### Latest Guides
   {% for post in site.posts limit:10 %}
     <blockquote>
       <a href="{{ post.url }}">
