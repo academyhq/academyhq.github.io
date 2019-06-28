@@ -1,3 +1,7 @@
+---
+title: Just Programming
+---
+
 ### Latest Guides
 <div class="posts">
   {% for post in site.posts limit:10 %}
