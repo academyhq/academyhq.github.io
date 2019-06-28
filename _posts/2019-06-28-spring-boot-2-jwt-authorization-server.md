@@ -1,6 +1,6 @@
 ---
 layout: post
-title: (DRAFT) spring boot + spring security + jwt | authorization server
+title: (DRAFT) Spring Boot + Spring Security + JWT | Authorization Server
 date: 2019-06-28
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
