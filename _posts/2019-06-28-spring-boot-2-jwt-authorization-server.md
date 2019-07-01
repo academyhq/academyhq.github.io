@@ -130,6 +130,74 @@ security:
           -----END RSA PRIVATE KEY-----
 ```
 
+This implementation works as described but there are some disadventages that quickly make this approach too simplistic for any practical application.
+For example, it only allows for *one* client to be configured within the authorization server and only at start time.
+Realistically, you may want to allow clients to dynamically register with your server and issue them with client credentials as part of your self-service on-baording process.
+Also, all auto-configured OAuth endpoints are by default protected but it is likely that you may want some of those public.
+For example, `/oauth/token_key` is an endpoint that returns the authorization server's public key, which can be used by resource servers to verify access token signatures.
+It is safe to expose this endpoint to your clients but to do so we need to take over the auto-configuration of the authorization server.
+This can be done by defining a custom configuration class (annotated with `@Configucation`) and extending it with `AuthorizationServerConfigurerAdapter` class.
+Unfortunately, once you do this, some of the configurations you got for free will be disabled. For example, the JWT converter and the signing key will have to be manually configured.
+Otherwise, the implementation will default to UUID-based, opaque tokens.
+
+```java
+package spring.boot.jwt.authorization.server;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.authserver.AuthorizationServerProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
+import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
+import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
+import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
+import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
+import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
+
+@Configuration
+@EnableAuthorizationServer
+@EnableConfigurationProperties(AuthorizationServerProperties.class)
+public class AuthorizationServerConfigurer extends AuthorizationServerConfigurerAdapter {
+
+    @Autowired
+    private AuthorizationServerProperties properties;
+
+    @Override
+    public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+        security.tokenKeyAccess("permitAll()");
+    }
+
+    @Override
+    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+        clients.inMemory()
+                .withClient("client")
+                .secret(passwordEncoder().encode("password"))
+                .authorizedGrantTypes("client_credentials");
+    }
+
+    @Override
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
+        endpoints.accessTokenConverter(accessTokenConverter());
+    }
+
+    @Bean
+    public JwtAccessTokenConverter accessTokenConverter() {
+        var converter = new JwtAccessTokenConverter();
+        converter.setSigningKey(properties.getJwt().getKeyValue());
+        return converter;
+    }
+    
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+
+```
+
 ### Testing
 Annotating your application with `@EnableAuthorizationServer` creates several OAuth endpoints that can be used to authenticate users and obtain & verify access tokens.
 For the purpose of this guide, we will only use the `/oauth/token` endpoint to get an access token using `grant_type=client_credentials`.
@@ -196,7 +264,6 @@ public class ClientAuthenticationIT {
 
 The above test class uses a verifier (public) key to verify JWT access token signatures.
 It is wired into the test class from the `src/test/resources/application-test.yaml`.
-See the OpenSSL commands describes above for more information on how to generate the private and public keys.
 
 ```yaml
 jwt.verifier.key: |
@@ -210,6 +277,9 @@ jwt.verifier.key: |
   2wIDAQAB
   -----END PUBLIC KEY-----
 ```
+
+(See the OpenSSL commands describes above for more information on how to generate the private and public keys).
+
 
 Run the test on the command line:
 
