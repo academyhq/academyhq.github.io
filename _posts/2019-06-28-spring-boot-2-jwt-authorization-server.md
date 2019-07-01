@@ -130,12 +130,45 @@ security:
           -----END RSA PRIVATE KEY-----
 ```
 
+### Quick Test
+
+We can quickly test that we now have a fully functioning authorization server. Start the application server using this Spring Boot gradle command:
+
+```bash
+> ./gradlew bootRun
+```
+
+Once the application starts, we can test the `/oauth/token` endpoint using the `curl` command, e.g.
+
+```bash
+> curl -X POST client:password@localhost:8080/oauth/token -dgrant_type=client_credentials -dscope=any
+```
+(**Note**: By default all grant types are enabled, `client_credentials` is the simplest one to use for a quick test).
+
+The response should look something like this:
+
+```json
+{
+  "access_token": "JWT ACCESS TOKEN GOES HERE",
+  "token_type": "bearer",
+  "expires_in": 43199,
+  "scope": "any",
+  "jti": "d3faa1c7-9c8a-462d-9b1a-35157f2f1da3"
+}
+```
+
+A quick way to check the contents of the JWT token is to use the excellent [https://jwt.io/](https://jwt.io/) online tool.
+
+### Re-Configure Authoriztion Server
+
 This implementation works as described but there are some disadventages that quickly make this approach too simplistic for any practical application.
 For example, it only allows for *one* client to be configured within the authorization server and only at start time.
 Realistically, you may want to allow clients to dynamically register with your server and issue them with client credentials as part of your self-service on-baording process.
+
 Also, all auto-configured OAuth endpoints are by default protected but it is likely that you may want some of those public.
 For example, `/oauth/token_key` is an endpoint that returns the authorization server's public key, which can be used by resource servers to verify access token signatures.
 It is safe to expose this endpoint to your clients but to do so we need to take over the auto-configuration of the authorization server.
+
 This can be done by defining a custom configuration class (annotated with `@Configucation`) and extending it with `AuthorizationServerConfigurerAdapter` class.
 Unfortunately, once you do this, some of the configurations you got for free will be disabled. For example, the JWT converter and the signing key will have to be manually configured.
 Otherwise, the implementation will default to UUID-based, opaque tokens.
@@ -197,6 +230,11 @@ public class AuthorizationServerConfigurer extends AuthorizationServerConfigurer
 }
 
 ```
+
+Once you have made the changes, run the authorization server again and re-run the above `curl` command.
+There should be no change to how the `/oauth/token` endpoint responds to your requests. There is a difference though.
+We have now moved the *registration* of clients into the code. Although this particular implementation is using an in-memory client store, which is statically initialised at boot time,
+it would be trivial to replace this with a dynamic, database backed store (leaving this as a subject for a future post).
 
 ### Testing
 Annotating your application with `@EnableAuthorizationServer` creates several OAuth endpoints that can be used to authenticate users and obtain & verify access tokens.
@@ -285,33 +323,6 @@ Run the test on the command line:
 
 ```bash
 > ./gradew test
-```
-
-### Running the application
-
-Start your Spring Boot application via this gradle command:
-
-```bash
-> ./gradlew bootRun
-```
-
-Once the application starts, we can test the `/oauth/token` endpoint using the `curl` command, e.g.
-
-
-```bash
-> curl -X POST client:password@localhost:8080/oauth/token -dgrant_type=client_credentials -dscope=any
-```
-
-The response should look something like this:
-
-```json
-{
-  "access_token": "JWT ACCESS TOKEN GOES HERE",
-  "token_type": "bearer",
-  "expires_in": 43199,
-  "scope": "any",
-  "jti": "d3faa1c7-9c8a-462d-9b1a-35157f2f1da3"
-}
 ```
 
 ### Conclusion
