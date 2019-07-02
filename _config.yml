@@ -3,6 +3,7 @@ theme: jekyll-theme-cayman
 markdwon: kramdown
 title: AcademyHQ
 description: Quick courses, guides and tutorials for developers
+google_analytics: UA-39757952-3
 kramdown:
   highlighter: rouge
   syntax_highlighter_opts:
