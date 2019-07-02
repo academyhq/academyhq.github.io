@@ -1,6 +1,6 @@
 ---
 layout: post
-title: (DRAFT) Spring Boot + Spring Security + JWT | Authorization Server
+title: Spring Boot + Spring Security + JWT | Authorization Server
 date: 2019-06-28
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
@@ -13,8 +13,8 @@ We shall make use of asymmetric key cryptography (specifically `RS256`) to digit
 Create a new Spring Boot project using Gradle.
 
 ```bash
-> mkdir spring-boot-jwt-authorization-server && cd spring-boot-jwt-authorization-server
-> gradle init --project-name spring-boot-jwt-authorization-server --type java-application --test-framework junit --package spring.boot.jwt.authorization.server --dsl groovy
+~$ mkdir spring-boot-jwt-authorization-server && cd spring-boot-jwt-authorization-server
+~$ gradle init --project-name spring-boot-jwt-authorization-server --type java-application --test-framework junit --package spring.boot.jwt.authorization.server --dsl groovy
 ```
 
 Replace the contents of the `build.gradle` file with the following:
@@ -78,18 +78,22 @@ We declare the above class to be both a Spring Boot application (using the `@Spr
 as well as an OAuth authorization server (using the `@EnableAuthorizationServer` annotation).
 
 ### Configure Authorization Server
-Since we want our authorization server to create JWT tokens signed using `RS256` algorithm, we need to generate a private, signing key and configure our application.
+Since we want our authorization server to create JWT tokens signed using `RS256` algorithm, we need to generate a private signing key and configure our application.
 You can use OpenSSL to generate the signing and verifier keys. For example, to generate a 2048 bit RSA key pair do the following:
 
 ```bash
-> openssl genrsa -out signing-key.pem 2048
-> openssl rsa -in signing-key.pem -pubout -out verifier-key.pem
+~$ openssl genrsa -out signing-key.pem 2048
+~$ openssl rsa -in signing-key.pem -pubout -out verifier-key.pem
 ```
 
 Copy the contents of the `signing-key.pem` file into the `src/main/resources/application.yaml` file using the `security.oauth2.authorization.jwt.key-value` property.
 
+> **Warning**
+> We are adding the signing key to our application properties file for demonstration purposes only.
+> Storing unencrypted private keys or committing them to Git is a bad idea.
+
 You will also have to configure a client. This is the application that will be making calls to the resource server on behalf of your users.
-At the minimum, this client needs to be issued with a client identifier and an authentication secret. 
+At the minimum, this client needs to be issued with a client identifier and an authentication secret.
 The client application will use these credentials to access protected resources of the authorization server.
 
 ```yaml
@@ -135,13 +139,13 @@ security:
 We can quickly test that we now have a fully functioning authorization server. Start the application server using this Spring Boot gradle command:
 
 ```bash
-> ./gradlew bootRun
+~$ ./gradlew bootRun
 ```
 
 Once the application starts, we can test the `/oauth/token` endpoint using the `curl` command, e.g.
 
 ```bash
-> curl -X POST client:password@localhost:8080/oauth/token -dgrant_type=client_credentials -dscope=any
+~$ curl -X POST client:password@localhost:8080/oauth/token -dgrant_type=client_credentials -dscope=any
 ```
 (**Note**: By default all grant types are enabled, `client_credentials` is the simplest one to use for a quick test).
 
@@ -169,7 +173,7 @@ Also, all auto-configured OAuth endpoints are by default protected but it is lik
 For example, `/oauth/token_key` is an endpoint that returns the authorization server's public key, which can be used by resource servers to verify access token signatures.
 It is safe to expose this endpoint to your clients but to do so we need to take over the auto-configuration of the authorization server.
 
-This can be done by defining a custom configuration class (annotated with `@Configucation`) and extending it with `AuthorizationServerConfigurerAdapter` class.
+This can be done by defining a custom configuration class (annotated with `@Configuration`) and extending it with `AuthorizationServerConfigurerAdapter` class.
 Unfortunately, once you do this, some of the configurations you got for free will be disabled. For example, the JWT converter and the signing key will have to be manually configured.
 Otherwise, the implementation will default to UUID-based, opaque tokens.
 
@@ -222,7 +226,7 @@ public class AuthorizationServerConfigurer extends AuthorizationServerConfigurer
         converter.setSigningKey(properties.getJwt().getKeyValue());
         return converter;
     }
-    
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -232,9 +236,69 @@ public class AuthorizationServerConfigurer extends AuthorizationServerConfigurer
 ```
 
 Once you have made the changes, run the authorization server again and re-run the above `curl` command.
+
 There should be no change to how the `/oauth/token` endpoint responds to your requests. There is a difference though.
 We have now moved the *registration* of clients into the code. Although this particular implementation is using an in-memory client store, which is statically initialised at boot time,
 it would be trivial to replace this with a dynamic, database backed store (leaving this as a subject for a future post).
+
+We have also changed the default permissions of the `/oath/token_key` endpoint to `permitAll()`, effectivelly making this endpoint public.
+However, making a call to this endpoing (e.g. `curl http://localhost:8080/oauth/token_key`), returns something that looks like this:
+
+```json
+{
+  "alg": "SHA256withRSA",
+  "value": "otse1b"
+}
+```
+
+This is definitely not a public key that a resource server would be able to use to verify digital signatures of JWT access tokens. What is going on here?
+
+The issue is with how we have initialised the signing key of the `JwtAccessTokenConverter` (e.g. `converter.setSigningKey(properties.getJwt().getKeyValue())`).
+By only setting the signing (and not the verifier) key, it defaulted the verifier key to a randomly generated string. This is not what we want.
+
+We have two options. Either we configure a PEM encoded public verifier key in the application.yaml (just as we did with the signing key), or we use the signing key to derive a
+`java.security.KeyPair` and pass that to the `JwtAccessTokenConverter` instance. As this is a more interesting approach, let's do that. Make the following changes to the
+`AuthorizationServerConfigurer` class:
+
+```java
+@Bean
+public JwtAccessTokenConverter accessTokenConverter() {
+    var converter = new JwtAccessTokenConverter();
+    converter.setKeyPair(getKeyPair());
+    return converter;
+}
+
+private KeyPair getKeyPair() {
+    try {
+        var factory = KeyFactory.getInstance("RSA");
+        var reader = new PemReader(new StringReader(properties.getJwt().getKeyValue()));
+        var keyPair = (PEMKeyPair) new PEMParser(reader).readObject();
+        var privateKeySpec = new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded());
+        var publicKeySpec = new X509EncodedKeySpec(keyPair.getPublicKeyInfo().getEncoded());
+        var privateKey = factory.generatePrivate(privateKeySpec);
+        var publicKey = factory.generatePublic(publicKeySpec);
+        return new KeyPair(publicKey, privateKey);
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
+        throw new RuntimeException("Cannot parse RSA private key");
+    }
+}
+```
+
+With these changes, the call to the `/oath/token_key` endpoint should return the following response:
+
+```json
+{
+  "alg": "SHA256withRSA",
+  "value":"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkq....2wIDAQAB\n-----END PUBLIC KEY-----"
+}
+```
+
+This endpoint is now useful to resource servers that wish to dynamically load the public key of the authorization server to verify JWT access token signatures.
+
+If you are familiar with the OpenID Connect (OIDC) specification, you may notice that this endpoint does not quite conform to the "Public Server JWK Set" API
+(both the URI of the endpoint, as well as its payload). We will explore ways of fixing this in a future post.
+
+However, for any Spring applications that use the `@EnableResourceServer` annotation, the `/oauth/token_key` endpoint should work as is.
 
 ### Testing
 Annotating your application with `@EnableAuthorizationServer` creates several OAuth endpoints that can be used to authenticate users and obtain & verify access tokens.
@@ -322,7 +386,7 @@ jwt.verifier.key: |
 Run the test on the command line:
 
 ```bash
-> ./gradew test
+~$ ./gradew test
 ```
 
 ### Conclusion
