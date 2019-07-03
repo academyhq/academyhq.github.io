@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Spring Boot + Spring Security + JWT | Authorization Server
+title: Building an OAuth 2 authorization server with Spring Boot
 date: 2019-06-28
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
@@ -301,7 +301,8 @@ This endpoint is now useful to resource servers that wish to dynamically load th
 If you are familiar with the OpenID Connect (OIDC) specification, you may notice that this endpoint does not quite conform to the "Public Server JWK Set" API
 (both the URI of the endpoint, as well as its payload). We will explore ways of fixing this in a future post.
 
-However, for any Spring applications that use the `@EnableResourceServer` annotation, the `/oauth/token_key` endpoint should work as is.
+However, for any Spring application that uses the `@EnableResourceServer` annotation, the `/oauth/token_key` endpoint should work as is provided you use the
+`security.oauth2.resource.jwt.key-uri` property instead of the `security.oauth2.resource.jwk.key-set-uri`, which does expect a standards compliant response.
 
 ### Conclusion
 This guide demonstrated how to implement a customer OAuth authorization server using Spring Boot 2 and Spring Security 5.
