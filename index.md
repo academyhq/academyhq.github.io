@@ -1,5 +1,5 @@
 ---
-title: Just Programming
+title: Beyond the Basics
 ---
 
 ### Latest Guides
