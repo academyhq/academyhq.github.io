@@ -7,7 +7,7 @@ tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 
 This guide demonstrates how to secure HTTP/S service endpoints using JWT tokens within a Spring Boot microservice.
 
-We will continue the discussion we started in the previous [guide][spring-boot-2-oauth2-authorization-server], which presented a Spring Boot implementation of an authorization server.
+We will continue the discussion we started in the previous [guide][spring-boot-oauth2-authorization-server], which presented a Spring Boot implementation of an authorization server.
 Our authorization server allows authenticated clients to obtain digitally signed JWT access tokens, which can be independently verified by a resource server.
 
 The code for this guide is available in [GitHub][spring-boot-oauth2-resource-server.git].
