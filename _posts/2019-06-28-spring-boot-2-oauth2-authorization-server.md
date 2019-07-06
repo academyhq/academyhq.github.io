@@ -79,6 +79,9 @@ public class App {
 We declare the above class to be both a Spring Boot application (using the `@SpringBootApplication` annotation),
 as well as an OAuth authorization server (using the `@EnableAuthorizationServer` annotation).
 
+Finally, remove the `src/test/java/spring/boot/oauth2/resource/server/AppTest.java`.
+This auto-generated test class uses JUnit 4, while we will be using JUnit 5 in this guide.
+
 ### Configure Authorization Server
 Since we want our authorization server to create JWT tokens signed using `RS256` algorithm, we need to generate a private signing key and configure our application.
 You can use OpenSSL to generate the signing and verifier keys. For example, to generate a 2048 bit RSA key pair do the following:
@@ -259,7 +262,7 @@ This is definitely not a public key that a resource server would be able to use 
 The issue is with how we have initialised the signing key of the `JwtAccessTokenConverter` (e.g. `converter.setSigningKey(properties.getJwt().getKeyValue())`).
 By only setting the signing (and not the verifier) key, it defaulted the verifier key to a randomly generated string. This is not what we want.
 
-We have two options. Either we configure a PEM encoded public verifier key in the application.yaml (just as we did with the signing key), or we use the signing key to derive a
+We have two options. Either we configure a PEM encoded public verifier key in the `application.yaml` (just as we did with the signing key), or we use the signing key to derive a
 `java.security.KeyPair` and pass that to the `JwtAccessTokenConverter` instance. As this is a more interesting approach, let's do that. Make the following changes to the
 `AuthorizationServerConfigurer` class:
 
@@ -305,8 +308,11 @@ However, for any Spring application that uses the `@EnableResourceServer` annota
 `security.oauth2.resource.jwt.key-uri` property instead of the `security.oauth2.resource.jwk.key-set-uri`, which does expect a standards compliant response.
 
 ### Conclusion
-This guide demonstrated how to implement a customer OAuth authorization server using Spring Boot 2 and Spring Security 5.
+This guide demonstrated how to implement an OAuth 2 authorization server using Spring Boot 2 and Spring Security 5.
+
+In the next [guide][spring-boot-oauth2-resource-server] we will discuss how we can leverage this authorization server to build and secure resources of a resource server.
 
 The complete, working solution is available in [GitHub][spring-boot-oauth2-authorization-server.git].
 
 [spring-boot-oauth2-authorization-server.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server
+[spring-boot-oauth2-resource-server]: /2019/07/06/spring-boot-2-oauth2-resource-server
