@@ -274,7 +274,8 @@ public JwtAccessTokenConverter accessTokenConverter() {
     return converter;
 }
 
-private KeyPair getKeyPair() {
+@Bean
+public KeyPair getKeyPair() {
     try {
         var factory = KeyFactory.getInstance("RSA");
         var reader = new PemReader(new StringReader(properties.getJwt().getKeyValue()));
