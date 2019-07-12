@@ -7,7 +7,7 @@ tags: [spring framework, spring boot, spring security, java, gradle, jwt, jwk, o
 
 In the previous [guide][spring-boot-oauth2-authorization-server.post] we presented a simple implementation of an authorization server built using Spring Boot 2 and Spring Security 5.
 However, we've discovered that the default `/oauth/token_key` endpoint exposed by our service did not conform to the OpenID Connect (OIDC) specification.
-While this is not a problem for resource servers written in Spring Boot, mainly because of a work around exposed via the `security.oauth2.resource.jwt.key-uri` property,
+While this is not a problem for resource servers written in Spring Boot, mainly because of a workaround exposed via the `security.oauth2.resource.jwt.key-uri` property,
 applications using other technologies would not be able to easily integrate with our authorization server.
 
 The purpose of this guide is to demonstrate how we can extend our existing implementation by adding an OIDC compliant key set endpoint.
@@ -141,7 +141,7 @@ What we want the header to look like is this (setting `kid` to 1 because this is
 ```
 
 At present, it is not possible to easily extend `JwtAccessTokenConverter` to provide customer header attributes.
-The only work around is to extend the entire class and override the protected `encode` method responsible for creating the header.
+The only workaround is to extend the entire class and override the protected `encode` method responsible for creating the header.
 
 ```java
 package spring.boot.oauth2.authorization.server;
@@ -191,8 +191,7 @@ public class JwtAccessTokenWithKidConverter extends JwtAccessTokenConverter {
         catch (Exception e) {
             throw new IllegalStateException("Cannot convert access token to JSON", e);
         }
-        String token = JwtHelper.encode(content, signer, Map.of("kid", "1")).getEncoded();
-        return token;
+        return JwtHelper.encode(content, signer, Map.of("kid", "1")).getEncoded();
     }
 }
 ```
@@ -222,9 +221,16 @@ public JwtAccessTokenConverter accessTokenConverter() {
 
 ### Conclusion
 
+In this guide, we have extended an OAuth2 authorization server to support OIDC compliant JWKs URI endpoint.
+
+Subsequently, we have changed the resource server we built in the previous [guide][spring-boot-oauth2-resource-server.post] to use the new endpoint to retrieve authorization server's public key.
+
+Finally, we have worked through existing limitations of the `JwtAccessTokenConverter` class and discussed a workaround for adding a `kid` attribute to the JWT access token header.
+
 The complete, working solution is available in [GitHub][spring-boot-oauth2-authorization-server-jwks.git].
 
 [spring-boot-oauth2-authorization-server.post]: /2019/06/28/spring-boot-2-oauth2-authorization-server
+[spring-boot-oauth2-resource-server.post]: 2019/07/06/spring-boot-2-oauth2-resource-server
 [spring-boot-oauth2-resource-server.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server
 [spring-boot-oauth2-resource-server-jwks.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server/tree/jwks
 [spring-boot-oauth2-authorization-server.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server
