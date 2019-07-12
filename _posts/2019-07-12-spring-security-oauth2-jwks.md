@@ -230,7 +230,7 @@ Finally, we have worked through existing limitations of the `JwtAccessTokenConve
 The complete, working solution is available in [GitHub][spring-boot-oauth2-authorization-server-jwks.git].
 
 [spring-boot-oauth2-authorization-server.post]: /2019/06/28/spring-boot-2-oauth2-authorization-server
-[spring-boot-oauth2-resource-server.post]: 2019/07/06/spring-boot-2-oauth2-resource-server
+[spring-boot-oauth2-resource-server.post]: /2019/07/06/spring-boot-2-oauth2-resource-server
 [spring-boot-oauth2-resource-server.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server
 [spring-boot-oauth2-resource-server-jwks.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server/tree/jwks
 [spring-boot-oauth2-authorization-server.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server
