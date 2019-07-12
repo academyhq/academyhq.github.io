@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Building an OAuth 2 authorization server with Spring Boot
+title: Building an OAuth 2 authorization server with Spring Security 5
 date: 2019-06-28
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
