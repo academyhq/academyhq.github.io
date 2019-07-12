@@ -311,9 +311,9 @@ However, for any Spring application that uses the `@EnableResourceServer` annota
 ### Conclusion
 This guide demonstrated how to implement an OAuth 2 authorization server using Spring Boot 2 and Spring Security 5.
 
-In the next [guide][spring-boot-oauth2-resource-server] we will discuss how we can leverage this authorization server to build and secure resources of a resource server.
+In the next [guide][spring-security-oauth2-resource-server] we will discuss how we can leverage this authorization server to build and secure resources of a resource server.
 
 The complete, working solution is available in [GitHub][spring-boot-oauth2-authorization-server.git].
 
 [spring-boot-oauth2-authorization-server.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server
-[spring-boot-oauth2-resource-server]: /2019/07/06/spring-boot-2-oauth2-resource-server
+[spring-security-oauth2-resource-server]: /2019/07/06/spring-security-oauth2-resource-server
