@@ -1,13 +1,13 @@
 ---
 layout: post
-title: Building an OAuth 2 resource server with Spring Boot
+title: Building an OAuth 2 resource server with Spring Security 5
 date: 2019-07-06
 tags: [spring framework, spring boot, spring security, java, gradle, jwt, oauth]
 ---
 
 This guide demonstrates how to secure HTTP/S service endpoints using JWT tokens within a Spring Boot microservice.
 
-We will continue the discussion we started in the previous [guide][spring-boot-oauth2-authorization-server], which presented a Spring Boot implementation of an authorization server.
+We will continue the discussion we started in the previous [guide][spring-security-oauth2-authorization-server], which presented a Spring Boot implementation of an authorization server.
 Our authorization server allows authenticated clients to obtain digitally signed JWT access tokens, which can be independently verified by a resource server.
 
 The code for this guide is available in [GitHub][spring-boot-oauth2-resource-server.git].
@@ -187,6 +187,6 @@ This guide demonstrated how to protect HTTP service endpoints within a Spring Bo
 
 The complete, working solution is available in [GitHub][spring-boot-oauth2-resource-server.git].
 
-[spring-boot-oauth2-authorization-server]: /2019/06/28/spring-boot-2-oauth2-authorization-server
+[spring-security-oauth2-authorization-server]: /2019/06/28/spring-security-oauth2-authorization-server
 [spring-boot-oauth2-resource-server.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server
 
