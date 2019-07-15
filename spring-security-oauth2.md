@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Spring Security OAuth 2 Guides
-date: 
+date: 2019-07-15
 tags: [spring framework, spring security, jwt, jwk, oauth2]
 ---
 
