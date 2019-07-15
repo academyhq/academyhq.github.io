@@ -13,17 +13,17 @@ applications using other technologies would not be able to easily integrate with
 The purpose of this guide is to demonstrate how we can extend our existing implementation by adding an OIDC compliant key set endpoint.
 Same technique could then be used to expose additional OIDC endpoints thus bringing our implementation inline with the spec.
 
-The code for this guide is available in [GitHub][spring-boot-oauth2-authorization-server-jwks.git].
+The code for this guide is available in [GitHub][spring-security-oauth2-authorization-server-jwks.git].
 
 ### Configure Authorization Server to use JWK
-Starting with our original implementation of the [authorization server][spring-boot-oauth2-authorization-server.git],
+Starting with our original implementation of the [authorization server][spring-security-oauth2-authorization-server.git],
 we need to add a new dependency `com.nimbusds:nimbus-jose-jwt:7.4` to the `build.gradle` script to get the necessary primitives required to implement the JWK endpoint.
 
 Once this dependency is added to the classpath, we can implement a framework endpoint that exposes the authorization server's public key using JWK set URI.
 As per specification, let's expose this endpoint via the `/.well-known/jwks.json` path.
 
 ```java
-package spring.boot.oauth2.authorization.server;
+package spring.security.oauth2.authorization.server;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -90,7 +90,7 @@ The response should look something like this:
 
 ### Configure Resource Server to use JWK
 Re-configuring the resource server to use the JWK set URI endpoint, instead of the original `/oauth/token_key` endpoint is simple.
-Starting with our original implementation of the [resource server][spring-boot-oauth2-resource-server.git],
+Starting with our original implementation of the [resource server][spring-security-oauth2-resource-server.git],
 we need to remove the security.oauth2.resource.jwt.key-uri` property and replace it with `security.oauth2.resource.jwk.key-set-uri`.
 
 ```yaml
@@ -144,7 +144,7 @@ At present, it is not possible to easily extend `JwtAccessTokenConverter` to pro
 The only workaround is to extend the entire class and override the protected `encode` method responsible for creating the header.
 
 ```java
-package spring.boot.oauth2.authorization.server;
+package spring.security.oauth2.authorization.server;
 
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.RsaSigner;
@@ -227,11 +227,11 @@ Subsequently, we have changed the resource server we built in the previous [guid
 
 Finally, we have worked through existing limitations of the `JwtAccessTokenConverter` class and discussed a workaround for adding a `kid` attribute to the JWT access token header.
 
-The complete, working solution is available in [GitHub][spring-boot-oauth2-authorization-server-jwks.git].
+The complete, working solution is available in [GitHub][spring-security-oauth2-authorization-server-jwks.git].
 
 [spring-security-oauth2-authorization-server.post]: /2019/06/28/spring-security-oauth2-authorization-server
 [spring-security-oauth2-resource-server.post]: /2019/07/06/spring-security-oauth2-resource-server
-[spring-boot-oauth2-resource-server.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server
-[spring-boot-oauth2-resource-server-jwks.git]: https://github.com/academyhq/spring-boot-oauth2-resource-server/tree/jwks
-[spring-boot-oauth2-authorization-server.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server
-[spring-boot-oauth2-authorization-server-jwks.git]: https://github.com/academyhq/spring-boot-oauth2-authorization-server/tree/jwks
+[spring-security-oauth2-resource-server.git]: https://github.com/academyhq/spring-security-oauth2-resource-server
+[spring-security-oauth2-resource-server-jwks.git]: https://github.com/academyhq/spring-security-oauth2-resource-server/tree/jwks
+[spring-security-oauth2-authorization-server.git]: https://github.com/academyhq/spring-security-oauth2-authorization-server
+[spring-security-oauth2-authorization-server-jwks.git]: https://github.com/academyhq/spring-security-oauth2-authorization-server/tree/jwks
