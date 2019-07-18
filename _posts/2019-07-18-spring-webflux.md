@@ -5,7 +5,7 @@ date: 2019-07-18
 tags: [spring framework, spring webflux, reactive, spring data, jpa]
 ---
 
-In this guide, we will discuss how to build reactive web application using [Reactive Streams](https://www.reactive-streams.org) API.
+In this guide, we will discuss how to build reactive web applications using [Reactive Streams](https://www.reactive-streams.org) API.
 In Spring, the reactive-stack web framework is implemented in the form of a Spring WebFlux library.
 
 Spring WebFlux provides two programming models for defining reactive applications, annotation-based and functional.
@@ -232,15 +232,15 @@ The important aspect to note about the above class, is the use of reactive const
 A reactive application needs to be able to produce a stream of data that a consumer can "react" to.
 When only a single result is expected (i.e. we need to produce a stream with a single element), then the `Mono` class can be used.
 
-By making all methods in the above class return `Mono`, we have made them all asynchronous.
+By making all methods in the above class return `Mono`, we are effectively making them all asynchronous.
 
 *Note:* As was mentioned previously, our `MessageRepository` implementation does not support reactive programming due to its reliance on JDBC.
-As such, we need to block execution within each method to handle query results and produce server responses. We will address this limitation in a future post.
+As such, we need to block execution within each method to handle database calls and produce server responses. We will address this limitation in a future post.
 
 ### Create a router
-When we use annotation-based programming model, we are used to use `@RequestMapping` or `@GetMapping`, etc., annotations to define our routing mappings.
+When we use annotation-based programming model, we rely on `@RequestMapping` or `@GetMapping`, etc., annotations to define our routing mappings.
 In a functional programming model, we use APIs instead of annotations to do the same.
-In the following example, we map the various handler method we defined above to their corresponding routes.
+In the following example, we map the various handler methods we defined above to their corresponding routes.
 
 ```java
 package spring.webflux.example.message;
@@ -374,4 +374,4 @@ We have also demonstrated how to unit test our application using `@SpringBootTes
 
 The complete, working solution is available in [GitHub][spring-webflux.git].
 
-[spring-webflix.git]: https://github.com/academyhq/spring-webflux
+[spring-webflux.git]: https://github.com/academyhq/spring-webflux
