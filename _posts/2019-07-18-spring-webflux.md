@@ -21,7 +21,7 @@ Create a new Spring Boot project using Gradle (v5.5.x).
 
 ```bash
 ~$ mkdir spring-webflux && cd spring-webflux
-~$ gradle init --project-name spring-webflux --type java-application --test-framework junitjupiter --package spring.webflux.example --dsl groovy
+~$ gradle init --project-name spring-webflux --type java-application --test-framework junit-jupiter --package spring.webflux.example --dsl groovy
 ```
 
 Replace the contents of the `build.gradle` file with the following:
@@ -148,7 +148,7 @@ Likewise, the `MessageRepository` interface, is a mechanism by which `spring-dat
 > IMPORTANT
 >
 > JDBC is inherently blocking and as such does not support reactive programming model.
-> We will work around this limitation in this guide but will re-visit this in a future post.
+> We will work around this limitation in this guide but will re-visit this in the next [post][spring-webflux-r2dbc.post].
 
 ```java
 package spring.webflux.example.message;
@@ -235,7 +235,7 @@ When only a single result is expected (i.e. we need to produce a stream with a s
 By making all methods in the above class return `Mono`, we are effectively making them all asynchronous.
 
 *Note:* As was mentioned previously, our `MessageRepository` implementation does not support reactive programming due to its reliance on JDBC.
-As such, we need to block execution within each method to handle database calls and produce server responses. We will address this limitation in a future post.
+As such, we need to block execution within each method to handle database calls and produce server responses. We will address this limitation in the next [post][spring-webflux-r2dbc.post].
 
 ### Create a router
 When we use annotation-based programming model, we rely on `@RequestMapping` or `@GetMapping`, etc., annotations to define our routing mappings.
@@ -375,3 +375,4 @@ We have also demonstrated how to unit test our application using `@SpringBootTes
 The complete, working solution is available in [GitHub][spring-webflux.git].
 
 [spring-webflux.git]: https://github.com/academyhq/spring-webflux
+[spring-webflux-r2dbc.post]: /2019/07/24/spring-webflux-r2dbc
