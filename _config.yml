@@ -1,5 +1,6 @@
 name: academyhq.io
-theme: jekyll-theme-cayman
+#theme: jekyll-theme-cayman
+remote_theme: chrisrhymes/bulma-clean-theme
 markdwon: kramdown
 title: AcademyHQ
 description: Quick courses, guides and tutorials for developers
