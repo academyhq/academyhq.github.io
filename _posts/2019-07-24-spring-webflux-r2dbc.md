@@ -9,7 +9,7 @@ In the last [guide][spring-webflux.post] we build a reactive web application usi
 
 That application used a H2 relational database for persisting data. We used a `spring-data-jpa` library to give us the necessary primitives to handle calls to the database.
 Unfortunately, this library uses standard JDBC driver, which is inherently blocking.
-While functionally the solution works, it required us to block execution in our handler functions, which is no ideal.
+While functionally the solution works, it required us to block execution in our handler functions, which is not ideal.
 
 In this guide, we will address this limitation by replacing the JDBC library with one that supports reactive database connections (i.e. [R2DBC][r2dbc.git]).
 
@@ -134,7 +134,7 @@ public class Message {
 The differences between this implementation and its JPA equivalent are subtle.
 We have replaced the `@Entity` annotation with `@Table`, and the `@Id` and `@Column` annotations comes from a different package as well.
 
-One notable ommission is the `@GeneratedValue` annotation, which allowed us to control how primary keys are generated within the application code.
+One notable omission is the `@GeneratedValue` annotation, which allowed us to control how primary keys are generated within the application code.
 This is now delegated to the database.
 
 Next, we can define a repository interface.
@@ -162,7 +162,7 @@ CREATE TABLE message (
 ```
 
 Since we're using an in-memory database, we will need to re-create this table everytime we start the application.
-To ensure that this gets runs, add the following to the `src/main/resources/application.yaml`:
+To ensure that this gets run, add the following to the `src/main/resources/application.yaml`:
 
 ```yaml
 spring.r2dbc.initialization-mode: always
@@ -260,6 +260,7 @@ As you would expect there should not be many changes to our tests.
 Since we kept the interface identical to the previous implementation everything should work as before.
 
 The only minor difference being where we relied on the `MessageRepository` within our tests to initialise the database with test data.
+Now we have to contend with the asynchronous nature of the interface.
 
 ```java
 package spring.webflux.r2dbc.example.message;
@@ -364,4 +365,5 @@ The complete, working solution is available in [GitHub][spring-webflux-r2dbc.git
 
 [r2dbc.git]: https://github.com/r2dbc
 [spring-webflux.post]: /2019/07/18/spring-webflux
+[spring-webflux.git]: https://github.com/academyhq/spring-webflux
 [spring-webflux-r2dbc.git]: https://github.com/academyhq/spring-webflux-r2dbc
